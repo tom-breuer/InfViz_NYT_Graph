@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Information Visualization Project | NYT Analysis</title>
+	<link rel="stylesheet" type="text/css" href="./style.css">
+	<link href="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.css" rel="stylesheet">
+	<script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.js"></script>
+
+</head>
+
+<body>
+	<h1 class="responsive-svg-container">The Content Landscape of the New York Times</h1>
+	<div class="centerer" style="padding-bottom: 5px;">
+		<label for="color-select">Color nodes by: </label>
+		<select id="color-select">
+			<option value="section">Dominant Section of the Keyword</option>
+			<option value="length">Median Word Count of Articles with the Keyword</option>
+		</select>
+	</div>
+
+	<div id="legend"></div>
+
+	<div id="wrapper">
+		<div id="cnt">
+			<div id="network"></div>
+			<div id="histogram"></div>
+		</div>
+	</div>
+	<!-- Load your scripts here -->
+	<script src="https://d3js.org/d3.v7.min.js"></script>
+	<script src="https://d3js.org/d3-collection.v1.min.js"></script>
+	<script src="./script.js"></script>
+</body>
+
+</html>
