@@ -2,14 +2,14 @@ Promise.all([d3.json("./nyt_keyword_graph.json"), d3.json("./nyt_keyword_timeser
   .then(([graph, timeseriesData]) => {
     const { nodes, links } = graph;
     const lengthColor = d3.scaleSequential()
-      .domain([0, d3.max(nodes, d => d["median_word_count"])]) // min 0, max length
+      .domain([0, d3.max(nodes, d => d["median_word_count"])])
       .interpolator(d3.interpolateRdYlBu);
     const sectionColor = d3.scaleOrdinal([
       "#771155", "#AA4488", "#CC99BB", "#114477", "#4477AA",
       "#77AADD", "#117777", "#44AAAA", "#77CCCC", "#117744",
       "#44AA77", "#88CCAA", "#777711", "#AAAA44", "#DDDD77",
       "#774411", "#AA7744", "#DDAA77", "#771122", "#AA4455",
-      "#DD7788", "#332288", "#88CCEE", "#882255", "#661100"  // added 4
+      "#DD7788", "#332288", "#88CCEE", "#882255", "#661100"
     ]);
     createSectionLegend(nodes, sectionColor)
     plotNodeLink(nodes, links, timeseriesData, sectionColor, lengthColor);
@@ -114,8 +114,8 @@ colorMode = "section";
 
 const plotNodeLink = function (nodes, links, timeseriesData, sectionColor, lengthColor) {
 
-  const simWidth = 2500;
-  const simHeight = 2000;
+  const simWidth = 15000;
+  const simHeight = 10000;
 
   const svg = d3.select("#network")
     .append("svg")
@@ -131,7 +131,7 @@ const plotNodeLink = function (nodes, links, timeseriesData, sectionColor, lengt
     })
   svg.call(zoomBehavior);
 
-  const defaultScale = 0.04;
+  const defaultScale = .01;
   const defaultTranslate = [0, 0];
 
   svg.call(
@@ -141,22 +141,34 @@ const plotNodeLink = function (nodes, links, timeseriesData, sectionColor, lengt
       .scale(defaultScale)
   );
   const maxStrength = d3.max(links, d => d.strength);
-  const maxDist = 20;
-  const minDist = 20;
+  console.log(maxStrength)
+  const maxDist = 5000;
+  const minDist = 100;
+  var weightScale = d3.scaleLinear()
+    .domain(d3.extent(links, function (d) { return d.strength }))
+    .range([.1, 1])
+  var distScale = d3.scaleLinear().domain(d3.extent(links, function (d) { return d.strength }))
+    .range([50, 2000])
+  var sizeScale = d3.scaleSqrt()
+    .domain(d3.extent(nodes, function (d) { return d.count }))
+    .range([1000, 3000])
 
   const simulation = d3.forceSimulation(nodes)
     .force("node", d3.forceManyBody()
-      .strength(-10).distanceMax(maxDist))
+      .theta(0.99)
+      .strength(-300000)
+      .distanceMax(20000))
     .force("link", d3.forceLink(links)
       .id(d => d.keyword)
-      .distance(d => { return maxDist - (d.strength / maxStrength * (maxDist - minDist)) })
-      .strength(d => d.strength / maxStrength))
-    .force("center", d3.forceCenter())
+      .distance(d => { return distScale(d.strength) })
+      .strength(d => .9 * d.strength))
     .force("collision", d3.forceCollide()
-      .radius(d => d["count"] + 20)
-      //.iterations(40)
+      .radius(d => sizeScale(d["count"]) + 60)
+      .iterations(40)
     )
-    .on("tick", ticked);
+    .on("tick", ticked)
+    .alpha(1)
+    .alphaDecay(0.19);
 
   const link = container.append("g")
     .selectAll("line")
@@ -170,7 +182,7 @@ const plotNodeLink = function (nodes, links, timeseriesData, sectionColor, lengt
     .selectAll("circle")
     .data(nodes)
     .join("circle")
-    .attr("r", d => (d["count"] / 10))
+    .attr("r", d => (sizeScale(d["count"])))
     .attr("fill", d => sectionColor(d["top_section"]))
     .attr("stroke", "#ffffff")
     .attr("stroke-width", 1.5)
@@ -196,7 +208,7 @@ const plotNodeLink = function (nodes, links, timeseriesData, sectionColor, lengt
       .attr("fill", d =>
         value === "section"
           ? sectionColor(d["top_section"])
-          : lengthColor(d["count"])
+          : lengthColor(d["median_word_count"])
       );
 
     if (value === "section") {
@@ -215,8 +227,8 @@ const plotNodeLink = function (nodes, links, timeseriesData, sectionColor, lengt
     .data(nodes)
     .join("text")
     .text(d => d.keyword)
-    .attr("font-size", d => 28 + d.count / 100)
-    .attr("font-weight", "bold")
+    .attr("font-size", d => 28 + sizeScale(d.count) / 8)
+    // .attr("font-weight", "bold")
     .attr("text-anchor", "middle")
     .attr("dy", "0.35em")
     .attr("pointer-events", "none");
@@ -302,7 +314,6 @@ function showHistogram(series, keyword, colorMode, sectionColor, lengthColor) {
     .attr("text-anchor", "middle")
     .text("Time (YYYY-MM)");
 
-  // Y-axis label
   svg.select(".y-axis-label").remove();
   svg.append("text")
     .attr("class", "y-axis-label")
